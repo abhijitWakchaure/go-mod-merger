@@ -23,6 +23,9 @@ var modReplace = map[string]string{
 
 // Parse ...
 func Parse(moduleName string, files []string) error {
+	if len(files) == 0 {
+		return fmt.Errorf("no go.mod file(s) provided")
+	}
 	deps := make(map[string]depMeta, 0)
 	// Create a new modfile.File object
 	mod := new(modfile.File)
@@ -32,8 +35,12 @@ func Parse(moduleName string, files []string) error {
 	if err := mod.AddGoStmt("1.20"); err != nil {
 		return err
 	}
+	var versionMiss bool
 	for _, v := range files {
-		fmt.Println("Parsing go.mod file from path:", v)
+		if filepath.Base(v) != "go.mod" {
+			return fmt.Errorf("invalid go.mod file path: %s", v)
+		}
+		fmt.Println("Parsing go.mod at:", v)
 		if _, err := os.Stat(v); err != nil {
 			return err
 		}
@@ -57,6 +64,7 @@ func Parse(moduleName string, files []string) error {
 				indirect: req.Indirect,
 			}
 			if d, ok := deps[req.Mod.Path]; ok && d.version != dep.version {
+				versionMiss = true
 				fmt.Printf("\nError! Mismatched version for %s\n", req.Mod.Path)
 				fmt.Printf("\twant: %s \tmod file: %s\n", dep.version, dep.source)
 				fmt.Printf("\twant: %s \tmod file: %s\n", d.version, d.source)
@@ -109,6 +117,10 @@ func Parse(moduleName string, files []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("\nArtifacts generated successfully with module name '%s'\n", moduleName)
+	if versionMiss {
+		fmt.Printf("\nArtifacts generated with error(s) for module name '%s'\n", moduleName)
+	} else {
+		fmt.Printf("\nArtifacts generated successfully for module name '%s'\n", moduleName)
+	}
 	return nil
 }

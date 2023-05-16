@@ -39,7 +39,7 @@ var rootCmd = &cobra.Command{
 		p, _ := cmd.Flags().GetString("package")
 		err := modparser.Parse(p, args)
 		if err != nil {
-			fmt.Println("Error!", err.Error())
+			fmt.Printf("\nError! %s\n", err.Error())
 		}
 	},
 }

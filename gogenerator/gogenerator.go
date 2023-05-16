@@ -1,6 +1,7 @@
 package gogenerator
 
 import (
+	"fmt"
 	"io"
 	"text/template"
 
@@ -29,6 +30,10 @@ func GenerateImportsFile(imports Imports, w io.Writer) error {
 		if !v.Indirect {
 			required = append(required, v)
 		}
+	}
+	if len(required) == 0 {
+		fmt.Printf("\nWarning! no required imports present in the go.mod file")
+		return nil
 	}
 	imports.ImportsArr = required
 	tmpl := template.Must(template.New("test").Parse(tmplImports))

@@ -15,8 +15,13 @@ limitations under the License.
 */
 package main
 
-import "github.com/abhijitWakchaure/go-mod-merger/cmd"
+import (
+	"fmt"
+
+	"github.com/abhijitWakchaure/go-mod-merger/cmd"
+)
 
 func main() {
+	fmt.Printf("\nStarting Go Mod Merger [%s]...\n\n", Version())
 	cmd.Execute()
 }
