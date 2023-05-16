@@ -57,7 +57,7 @@ func Parse(moduleName string, files []string) error {
 				indirect: req.Indirect,
 			}
 			if d, ok := deps[req.Mod.Path]; ok && d.version != dep.version {
-				fmt.Printf("Error! Mismatched version for %s\n", req.Mod.Path)
+				fmt.Printf("\nError! Mismatched version for %s\n", req.Mod.Path)
 				fmt.Printf("\twant: %s \tmod file: %s\n", dep.version, dep.source)
 				fmt.Printf("\twant: %s \tmod file: %s\n", d.version, d.source)
 			}
