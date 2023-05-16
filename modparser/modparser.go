@@ -109,7 +109,6 @@ func Parse(moduleName string, files []string) error {
 	if err != nil {
 		return err
 	}
-	relPath, _ := filepath.Rel(pwd, outputDir)
-	fmt.Printf("Artifacts generated successfully '%s' with module name '%s'\n", relPath, moduleName)
+	fmt.Printf("\nArtifacts generated successfully with module name '%s'\n", moduleName)
 	return nil
 }
