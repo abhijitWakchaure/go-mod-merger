@@ -10,19 +10,19 @@ Just execute the binary passing path to multiple go.mod file(s)
 
 ```bash
 $ ./go-mod-merger ~/go/src/github.com/project-flogo/core/go.mod ~/go/src/github.com/project-flogo/flow/go.mod
-Parsing go.mod file from path: /home/abhijit/dev/godev/src/github.com/project-flogo/core/go.mod
-Parsing go.mod file from path: /home/abhijit/dev/godev/src/github.com/project-flogo/flow/go.mod
+Parsing go.mod file from path: ~/go/src/github.com/project-flogo/core/go.mod
+Parsing go.mod file from path: ~/go/src/github.com/project-flogo/flow/go.mod
 Error! Mismatched version for github.com/project-flogo/core
-        want: v1.6.5    mod file: /home/abhijit/dev/godev/src/github.com/project-flogo/legacybridge/go.mod
-        want: v1.6.4    mod file: /home/abhijit/dev/godev/src/github.com/project-flogo/flow/go.mod
+        want: v1.6.5    mod file: ~/go/src/github.com/project-flogo/legacybridge/go.mod
+        want: v1.6.4    mod file: ~/go/src/github.com/project-flogo/flow/go.mod
 Error! Mismatched version for github.com/stretchr/testify
-        want: v1.8.2    mod file: /home/abhijit/dev/godev/src/github.com/project-flogo/legacybridge/go.mod
-        want: v1.4.0    mod file: /home/abhijit/dev/godev/src/github.com/project-flogo/flow/go.mod
+        want: v1.8.2    mod file: ~/go/src/github.com/project-flogo/legacybridge/go.mod
+        want: v1.4.0    mod file: ~/go/src/github.com/project-flogo/flow/go.mod
 
-Artifacts generated successfully with module name 'dummy'
+Artifacts generated with error(s) for module name 'dummy'
 ```
 
-You can also pass a optioanl package name so that generated artifacts belong to the package you provided.
+You can also pass an optioanl package name so that generated artifacts belong to the package you provided.
 
 ```bash
 $ ./go-mod-merger -p test ~/go/src/github.com/project-flogo/core/go.mod ~/go/src/github.com/project-flogo/flow/go.mod
@@ -30,5 +30,42 @@ $ ./go-mod-merger -p test ~/go/src/github.com/project-flogo/core/go.mod ~/go/src
 ...
 ...
 
-Artifacts generated successfully with module name 'test'
+Artifacts generated successfully for module name 'test'
+```
+
+You can also pass an optioanl output directory path if you wish to store generated artifacts somewhere else rather than on default `./output`.
+
+```bash
+$ ./go-mod-merger -p test -o ../output ~/go/src/github.com/project-flogo/core/go.mod ~/go/src/github.com/project-flogo/flow/go.mod
+...
+...
+...
+
+Artifacts generated successfully for module name 'test'
+```
+
+## Artifacts
+
+The tool will create 3 artifacts: `go.mod`, `imports.go` and `depMismatch.json`
+
+- go.mod: This mod file will have the given module name (if not specified default `dummy` will be used), current go version, direct and indirect dependencies.
+
+- imports.go: This will contain import statements for all the required dependencies using blank identifier.
+
+- depMismatch.json: This will contain a tree of all the mismatched dependencies along with their versions and go.mod file path. e.g. The sample depMismatch.json will look like:
+
+```json
+{
+  "github.com/project-flogo/core": {
+    "v1.6.4": ["~/go/src/github.com/project-flogo/flow/go.mod"],
+    "v1.6.5": ["~/go/src/github.com/project-flogo/legacybridge/go.mod"]
+  },
+  "github.com/stretchr/testify": {
+    "v1.4.0": [
+      "~/go/src/github.com/project-flogo/core/go.mod",
+      "~/go/src/github.com/project-flogo/flow/go.mod"
+    ],
+    "v1.8.2": ["~/go/src/github.com/project-flogo/legacybridge/go.mod"]
+  }
+}
 ```

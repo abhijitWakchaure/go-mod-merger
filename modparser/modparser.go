@@ -1,10 +1,13 @@
 package modparser
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/abhijitWakchaure/go-mod-merger/gogenerator"
 	"golang.org/x/mod/modfile"
@@ -16,13 +19,15 @@ type depMeta struct {
 	indirect              bool
 }
 
+var depMismatchTree map[string]interface{}
+
 var modReplace = map[string]string{
 	"github.com/project-flogo/core": "github.com/abhijitWakchaure/project-flogo-core",
 	"github.com/project-flogo/flow": "github.com/abhijitWakchaure/project-flogo-flow",
 }
 
 // Parse ...
-func Parse(moduleName string, files []string) error {
+func Parse(moduleName, outputDir string, files []string) error {
 	if len(files) == 0 {
 		return fmt.Errorf("no go.mod file(s) provided")
 	}
@@ -32,10 +37,11 @@ func Parse(moduleName string, files []string) error {
 	if err := mod.AddModuleStmt(moduleName); err != nil {
 		return err
 	}
-	if err := mod.AddGoStmt("1.20"); err != nil {
+	if err := mod.AddGoStmt(goVersion()); err != nil {
 		return err
 	}
 	var versionMiss bool
+	depMismatchTree = make(map[string]interface{})
 	for _, v := range files {
 		if filepath.Base(v) != "go.mod" {
 			return fmt.Errorf("invalid go.mod file path: %s", v)
@@ -63,6 +69,7 @@ func Parse(moduleName string, files []string) error {
 				version:  req.Mod.Version,
 				indirect: req.Indirect,
 			}
+			addDepTree(req.Mod.Path, dep)
 			if d, ok := deps[req.Mod.Path]; ok && d.version != dep.version {
 				versionMiss = true
 				fmt.Printf("\nError! Mismatched version for %s\n", req.Mod.Path)
@@ -90,13 +97,11 @@ func Parse(moduleName string, files []string) error {
 	if err != nil {
 		return err
 	}
-	pwd, err := os.Getwd()
+	_, err = os.Stat(outputDir)
 	if err != nil {
-		return err
-	}
-	outputDir := filepath.Join(pwd, "output")
-	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
-		return err
+		if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+			return err
+		}
 	}
 	outputModFile := filepath.Join(outputDir, "go.mod")
 	err = ioutil.WriteFile(outputModFile, b, 0644)
@@ -117,10 +122,53 @@ func Parse(moduleName string, files []string) error {
 	if err != nil {
 		return err
 	}
+	filterDepTree()
+	b, err = json.MarshalIndent(depMismatchTree, "", "  ")
+	if err == nil {
+		outputDepErrJSON := filepath.Join(outputDir, "depMismatch.json")
+		err = ioutil.WriteFile(outputDepErrJSON, b, 0644)
+		if err != nil {
+			return err
+		}
+	}
 	if versionMiss {
 		fmt.Printf("\nArtifacts generated with error(s) for module name '%s'\n", moduleName)
 	} else {
 		fmt.Printf("\nArtifacts generated successfully for module name '%s'\n", moduleName)
 	}
 	return nil
+}
+
+func addDepTree(modPath string, dep depMeta) {
+	v, ok := depMismatchTree[modPath]
+	if !ok {
+		depMismatchTree[modPath] = map[string][]string{
+			dep.version: {dep.source},
+		}
+		return
+	}
+	versionList := v.(map[string][]string)
+	sources, ok := versionList[dep.version]
+	if ok {
+		sources = append(sources, dep.source)
+		versionList[dep.version] = sources
+	} else {
+		versionList[dep.version] = []string{dep.source}
+	}
+}
+
+func filterDepTree() {
+	for k, v := range depMismatchTree {
+		versionList := v.(map[string][]string)
+		if len(versionList) == 1 {
+			delete(depMismatchTree, k)
+		}
+	}
+}
+
+func goVersion() string {
+	v := runtime.Version()
+	v = strings.TrimLeft(v, "go")
+	vArr := strings.Split(v, ".")
+	return fmt.Sprintf("%s.%s", vArr[0], vArr[1])
 }

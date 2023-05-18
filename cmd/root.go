@@ -37,7 +37,8 @@ var rootCmd = &cobra.Command{
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
 		p, _ := cmd.Flags().GetString("package")
-		err := modparser.Parse(p, args)
+		outputDir, _ := cmd.Flags().GetString("outputDir")
+		err := modparser.Parse(p, outputDir, args)
 		if err != nil {
 			fmt.Printf("\nError! %s\n", err.Error())
 		}
@@ -53,6 +54,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.Flags().StringP("package", "p", "dummy", "Package name for generated go.mod and imports.go file")
+	rootCmd.Flags().StringP("outputDir", "o", "./output", "Output directory path to store generated artifacts")
 }
 
 // initConfig reads in config file and ENV variables if set.
