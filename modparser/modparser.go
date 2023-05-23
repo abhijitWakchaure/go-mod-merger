@@ -9,7 +9,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/abhijitWakchaure/go-mod-merger/config"
 	"github.com/abhijitWakchaure/go-mod-merger/gogenerator"
+	"github.com/abhijitWakchaure/go-mod-merger/semvar"
 	"golang.org/x/mod/modfile"
 )
 
@@ -21,17 +23,22 @@ type depMeta struct {
 
 var depMismatchTree map[string]interface{}
 
-var modReplace = map[string]string{
-	"github.com/project-flogo/core": "github.com/abhijitWakchaure/project-flogo-core",
-	"github.com/project-flogo/flow": "github.com/abhijitWakchaure/project-flogo-flow",
-}
+var modReplace = map[string]string{}
 
 // Parse ...
 func Parse(moduleName, outputDir string, files []string) error {
 	if len(files) == 0 {
 		return fmt.Errorf("no go.mod file(s) provided")
 	}
-	deps := make(map[string]depMeta, 0)
+	c := config.Read()
+	if c != nil {
+		modReplace = c.Replace
+		fmt.Printf("Using replace map:\n")
+		for _, v := range modReplace {
+			fmt.Printf("\t%s\n", v)
+		}
+	}
+	deps := make(map[string]*depMeta, 0)
 	// Create a new modfile.File object
 	mod := new(modfile.File)
 	if err := mod.AddModuleStmt(moduleName); err != nil {
@@ -63,20 +70,28 @@ func Parse(moduleName, outputDir string, files []string) error {
 
 		// Print the module's dependencies
 		for _, req := range mod.Require {
-			dep := depMeta{
+			dep := &depMeta{
 				source:   v,
 				path:     req.Mod.Path,
 				version:  req.Mod.Version,
 				indirect: req.Indirect,
 			}
-			addDepTree(req.Mod.Path, dep)
 			if d, ok := deps[req.Mod.Path]; ok && d.version != dep.version {
-				versionMiss = true
-				fmt.Printf("\nError! Mismatched version for %s\n", req.Mod.Path)
-				fmt.Printf("\twant: %s \tmod file: %s\n", dep.version, dep.source)
-				fmt.Printf("\twant: %s \tmod file: %s\n", d.version, d.source)
+				fmt.Printf("\nMismatched version for %s\n", req.Mod.Path)
+				fmt.Printf("\twant  : %s \tmod file: %s\n", dep.version, dep.source)
+				fmt.Printf("\twant  : %s \tmod file: %s\n", d.version, d.source)
+				latest, err := semvar.Compare(d.version, dep.version)
+				if err != nil {
+					fmt.Printf("Error! %s\n", err.Error())
+					versionMiss = true
+				} else {
+					fmt.Printf("\tpicked: %s 🔼\n", latest)
+					dep.version = latest
+					deps[req.Mod.Path].version = latest
+				}
 			}
 			deps[req.Mod.Path] = dep
+			addDepTree(req.Mod.Path, dep)
 		}
 	}
 	for k, v := range deps {
@@ -139,7 +154,7 @@ func Parse(moduleName, outputDir string, files []string) error {
 	return nil
 }
 
-func addDepTree(modPath string, dep depMeta) {
+func addDepTree(modPath string, dep *depMeta) {
 	v, ok := depMismatchTree[modPath]
 	if !ok {
 		depMismatchTree[modPath] = map[string][]string{

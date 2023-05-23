@@ -1,0 +1,6 @@
+{
+  "replace": {
+    "github.com/project-flogo/core": "github.com/abhijitWakchaure/project-flogo-core",
+    "github.com/project-flogo/flow": "github.com/abhijitWakchaure/project-flogo-flow"
+  }
+}

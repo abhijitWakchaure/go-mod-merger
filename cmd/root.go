@@ -23,7 +23,6 @@ import (
 	"github.com/abhijitWakchaure/go-mod-merger/modparser"
 	"github.com/spf13/cobra"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 )
 
@@ -64,12 +63,13 @@ func initConfig() {
 		viper.SetConfigFile(cfgFile)
 	} else {
 		// Find home directory.
-		home, err := homedir.Dir()
+		pwd, err := os.Getwd()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".go-mod-merger" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".go-mod-merger")
+		// Search config in pwd with name "go-mod-merger.json".
+		viper.AddConfigPath(pwd)
+		viper.SetConfigType("json")
+		viper.SetConfigName("go-mod-merger")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
