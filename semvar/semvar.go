@@ -102,7 +102,7 @@ func getPatchDigit(pStr string) int {
 }
 
 func convertTimestamp(timestamp string) (time.Time, error) {
-	// Format: yymmddhhmmss
-	layout := "060102150405"
+	// Format: yyyymmddhhmmss
+	layout := "20060102150405"
 	return time.Parse(layout, timestamp)
 }

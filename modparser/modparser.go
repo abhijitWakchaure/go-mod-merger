@@ -53,7 +53,7 @@ func Parse(moduleName, outputDir string, files []string) error {
 		if filepath.Base(v) != "go.mod" {
 			return fmt.Errorf("invalid go.mod file path: %s", v)
 		}
-		fmt.Println("Parsing go.mod at:", v)
+		fmt.Printf("\nParsing go.mod at: %s", v)
 		if _, err := os.Stat(v); err != nil {
 			return err
 		}
@@ -82,7 +82,7 @@ func Parse(moduleName, outputDir string, files []string) error {
 				fmt.Printf("\twant  : %s \tmod file: %s\n", d.version, d.source)
 				latest, err := semvar.Compare(d.version, dep.version)
 				if err != nil {
-					fmt.Printf("Error! %s\n", err.Error())
+					fmt.Printf("❌ Error! %s\n", err.Error())
 					versionMiss = true
 				} else {
 					fmt.Printf("\tpicked: %s 🔼\n", latest)
