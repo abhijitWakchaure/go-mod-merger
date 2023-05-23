@@ -56,6 +56,21 @@ You can also pass an optioanl output directory path if you wish to store generat
 ./go-mod-merger -p test -o ../output ~/go/src/github.com/project-flogo/core/go.mod ~/go/src/github.com/project-flogo/flow/go.mod
 ```
 
+## Config
+
+Currently the tool supports passing a map of module names to replace via a config file named as `go-mod-merger.json`. This is how the sample config file should look like:
+
+```json
+{
+  "replace": {
+    "github.com/project-flogo/core": "github.com/abhijitWakchaure/project-flogo-core",
+    "github.com/project-flogo/flow": "github.com/abhijitWakchaure/project-flogo-flow"
+  }
+}
+```
+
+This config will add the `replace` statements using above json object.
+
 ## Artifacts
 
 The tool will create 3 artifacts: `go.mod`, `imports.go` and `depMismatch.json`
