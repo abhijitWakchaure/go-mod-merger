@@ -6,13 +6,14 @@ import (
 
 // Config ...
 type Config struct {
-	Replace map[string]string `json:"replace,omitempty"`
+	Replace                    map[string]string `json:"replace,omitempty"`
+	IgnoreMajorVersionMismatch []string          `json:"ignoreMajorVersionMismatch,omitempty"`
 }
 
 // Read ...
 func Read() *Config {
-	c := &Config{}
-	m := viper.GetStringMapString("replace")
-	c.Replace = m
-	return c
+	return &Config{
+		Replace:                    viper.GetStringMapString("replace"),
+		IgnoreMajorVersionMismatch: viper.GetStringSlice("ignoreMajorVersionMismatch"),
+	}
 }

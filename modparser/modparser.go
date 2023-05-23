@@ -80,7 +80,7 @@ func Parse(moduleName, outputDir string, files []string) error {
 				fmt.Printf("\nMismatched version for %s\n", req.Mod.Path)
 				fmt.Printf("\twant  : %s \tmod file: %s\n", dep.version, dep.source)
 				fmt.Printf("\twant  : %s \tmod file: %s\n", d.version, d.source)
-				latest, err := semvar.Compare(d.version, dep.version)
+				latest, err := semvar.Compare(req.Mod.Path, d.version, dep.version)
 				if err != nil {
 					fmt.Printf("❌ Error! %s\n", err.Error())
 					versionMiss = true

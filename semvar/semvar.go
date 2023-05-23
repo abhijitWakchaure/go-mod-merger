@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/abhijitWakchaure/go-mod-merger/config"
 )
 
 // Compare will compare semvar of 2 modules and return the higher version
@@ -14,7 +16,7 @@ import (
 // v0.9.4-hf.1
 // v0.9.1-0.20190603184501-d845e1d612f8
 // v0.9.0-rc.1.0.20190509204259-4246269fb68e
-func Compare(v1Str, v2Str string) (string, error) {
+func Compare(packageName, v1Str, v2Str string) (string, error) {
 	if !strings.HasPrefix(v1Str, "v") || !strings.HasPrefix(v2Str, "v") {
 		return "", fmt.Errorf("version does not follow semvar guidelines")
 	}
@@ -24,10 +26,22 @@ func Compare(v1Str, v2Str string) (string, error) {
 	}
 	v1Split := strings.SplitN(v1Str, ".", 3)
 	v2Split := strings.SplitN(v2Str, ".", 3)
+
 	// Compare major versions
-	if v1Split[0] != v2Split[0] {
+	if isMajorMismatchIgnored(packageName) {
+		m1, _ := strconv.Atoi(strings.TrimLeft(v1Split[0], "v"))
+		m2, _ := strconv.Atoi(strings.TrimLeft(v2Split[0], "v"))
+		if m1 > m2 {
+			fmt.Printf("\t🚩 Ignored major version mismatch\n")
+			return v1Str, nil
+		} else if m1 < m2 {
+			fmt.Printf("\t🚩 Ignored major version mismatch\n")
+			return v2Str, nil
+		}
+	} else if v1Split[0] != v2Split[0] {
 		return "", fmt.Errorf("major version mismatched")
 	}
+
 	// Compare minor versions
 	if v1Split[1] != v2Split[1] {
 		v1, _ := strconv.Atoi(v1Split[1])
@@ -41,9 +55,10 @@ func Compare(v1Str, v2Str string) (string, error) {
 	// check if patch version is just a number
 	p1 := getPatchDigit(v1Split[2])
 	p2 := getPatchDigit(v2Split[2])
+
 	if p1 > p2 {
 		return v1Str, nil
-	} else if p2 < p1 {
+	} else if p1 < p2 {
 		return v2Str, nil
 	}
 	// Patch digit is same, need to compare pseudo-version numbers
@@ -55,11 +70,11 @@ func Compare(v1Str, v2Str string) (string, error) {
 
 	// Check if patch version is NOT a standard pseudo-version numeber using it's length i.e. 28
 	if len(v1Split[2]) != 28+len(fmt.Sprintf("%d", p1)) {
-		return "", fmt.Errorf("version [%s] is not standard pseudo-version number. Human intervention is required", v1Str)
+		return "", fmt.Errorf("either versions [%s] or [%s] is not standard pseudo-version number. Human intervention is required", v1Str, v2Str)
 	}
 
 	if len(v2Split[2]) != 28+len(fmt.Sprintf("%d", p2)) {
-		return "", fmt.Errorf("version [%s] is not standard pseudo-version number. Human intervention is required", v2Str)
+		return "", fmt.Errorf("either versions [%s] or [%s] is not standard pseudo-version number. Human intervention is required", v2Str, v2Str)
 	}
 
 	p1Timestamp := strings.Split(v1Split[2], "-")[1]
@@ -105,4 +120,13 @@ func convertTimestamp(timestamp string) (time.Time, error) {
 	// Format: yyyymmddhhmmss
 	layout := "20060102150405"
 	return time.Parse(layout, timestamp)
+}
+
+func isMajorMismatchIgnored(packageName string) bool {
+	for _, v := range config.Read().IgnoreMajorVersionMismatch {
+		if packageName == v {
+			return true
+		}
+	}
+	return false
 }
