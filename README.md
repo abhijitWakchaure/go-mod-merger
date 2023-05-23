@@ -9,17 +9,34 @@ The `imports.go` file will have all the direct imports under a single import sta
 Just execute the binary passing path to multiple go.mod file(s)
 
 ```bash
-$ ./go-mod-merger ~/go/src/github.com/project-flogo/core/go.mod ~/go/src/github.com/project-flogo/flow/go.mod
-Parsing go.mod file from path: ~/go/src/github.com/project-flogo/core/go.mod
-Parsing go.mod file from path: ~/go/src/github.com/project-flogo/flow/go.mod
-Error! Mismatched version for github.com/project-flogo/core
-        want: v1.6.5    mod file: ~/go/src/github.com/project-flogo/legacybridge/go.mod
-        want: v1.6.4    mod file: ~/go/src/github.com/project-flogo/flow/go.mod
-Error! Mismatched version for github.com/stretchr/testify
-        want: v1.8.2    mod file: ~/go/src/github.com/project-flogo/legacybridge/go.mod
-        want: v1.4.0    mod file: ~/go/src/github.com/project-flogo/flow/go.mod
+$ ./go-mod-merger ~/go/src/github.com/project-flogo/core/go.mod ~/go/src/github.com/project-flogo/flow/go.mod ~/go/src/github.com/project-flogo/legacybridge/go.mod ./go.mod
+Starting Go Mod Merger [v1.2.0]...
 
-Artifacts generated with error(s) for module name 'dummy'
+Using config file: ~/go/src/github.com/abhijitWakchaure/go-mod-merger/go-mod-merger.json
+Using replace map:
+        github.com/abhijitWakchaure/project-flogo-core
+        github.com/abhijitWakchaure/project-flogo-flow
+Parsing go.mod at: ~/go/src/github.com/project-flogo/core/go.mod
+Parsing go.mod at: ~/go/src/github.com/project-flogo/flow/go.mod
+Parsing go.mod at: ~/go/src/github.com/project-flogo/legacybridge/go.mod
+
+Mismatched version for github.com/project-flogo/core
+        want  : v1.6.5  mod file: ~/go/src/github.com/project-flogo/legacybridge/go.mod
+        want  : v1.6.4  mod file: ~/go/src/github.com/project-flogo/flow/go.mod
+        picked: v1.6.5 🔼
+
+Mismatched version for github.com/stretchr/testify
+        want  : v1.8.2  mod file: ~/go/src/github.com/project-flogo/legacybridge/go.mod
+        want  : v1.4.0  mod file: ~/go/src/github.com/project-flogo/flow/go.mod
+        picked: v1.8.2 🔼
+Parsing go.mod at: ./go.mod
+
+Mismatched version for golang.org/x/sys
+        want  : v0.3.0  mod file: ./go.mod
+        want  : v0.0.0-20220715151400-c0bba94af5f8      mod file: ~/go/src/github.com/project-flogo/legacybridge/go.mod
+        picked: v0.3.0 🔼
+
+Artifacts generated successfully for module name 'dummy'
 ```
 
 You can also pass an optioanl package name so that generated artifacts belong to the package you provided.
@@ -36,12 +53,7 @@ Artifacts generated successfully for module name 'test'
 You can also pass an optioanl output directory path if you wish to store generated artifacts somewhere else rather than on default `./output`.
 
 ```bash
-$ ./go-mod-merger -p test -o ../output ~/go/src/github.com/project-flogo/core/go.mod ~/go/src/github.com/project-flogo/flow/go.mod
-...
-...
-...
-
-Artifacts generated successfully for module name 'test'
+./go-mod-merger -p test -o ../output ~/go/src/github.com/project-flogo/core/go.mod ~/go/src/github.com/project-flogo/flow/go.mod
 ```
 
 ## Artifacts
