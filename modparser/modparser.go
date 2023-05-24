@@ -31,7 +31,7 @@ func Parse(moduleName, outputDir string, files []string) error {
 		return fmt.Errorf("no go.mod file(s) provided")
 	}
 	c := config.Read()
-	if c != nil {
+	if c != nil && len(c.Replace) > 0 {
 		modReplace = c.Replace
 		fmt.Printf("Using replace map:\n")
 		for _, v := range modReplace {
@@ -77,16 +77,21 @@ func Parse(moduleName, outputDir string, files []string) error {
 				version:  req.Mod.Version,
 				indirect: req.Indirect,
 			}
+			// check if master is forced for the package
+			if isMasterForced(dep.path) {
+				fmt.Printf("\n\t🚩 Overriding version with 'master' for module [%s]", dep.path)
+				dep.version = "master"
+			}
 			if d, ok := deps[req.Mod.Path]; ok && d.version != dep.version {
-				fmt.Printf("\nMismatched version for %s\n", req.Mod.Path)
-				fmt.Printf("\twant  : %s \tmod file: %s\n", dep.version, dep.source)
-				fmt.Printf("\twant  : %s \tmod file: %s\n", d.version, d.source)
+				fmt.Printf("\n\tMismatched version for [%s]\n", req.Mod.Path)
+				fmt.Printf("\t\twant  : %s \tmod file: %s\n", dep.version, dep.source)
+				fmt.Printf("\t\twant  : %s \tmod file: %s\n", d.version, d.source)
 				latest, err := semvar.Compare(req.Mod.Path, d.version, dep.version)
 				if err != nil {
 					fmt.Printf("❌ Error! %s\n", err.Error())
 					versionMiss = true
 				} else {
-					fmt.Printf("\tpicked: %s 🔼\n", latest)
+					fmt.Printf("\t\tpicked: %s 🔼\n", latest)
 					dep.version = latest
 					deps[req.Mod.Path].version = latest
 				}
@@ -194,4 +199,13 @@ func writeJSON(filePath string, data any) error {
 		return err
 	}
 	return nil
+}
+
+func isMasterForced(packageName string) bool {
+	for _, v := range config.Read().ForceMaster {
+		if packageName == v {
+			return true
+		}
+	}
+	return false
 }
