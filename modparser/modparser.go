@@ -21,7 +21,7 @@ type depMeta struct {
 	indirect              bool
 }
 
-var depMismatchTree map[string]interface{}
+var depMismatchTree, allDepsTree map[string]interface{}
 
 var modReplace = map[string]string{}
 
@@ -49,6 +49,7 @@ func Parse(moduleName, outputDir string, files []string) error {
 	}
 	var versionMiss bool
 	depMismatchTree = make(map[string]interface{})
+	allDepsTree = make(map[string]interface{})
 	for _, v := range files {
 		if filepath.Base(v) != "go.mod" {
 			return fmt.Errorf("invalid go.mod file path: %s", v)
@@ -138,14 +139,8 @@ func Parse(moduleName, outputDir string, files []string) error {
 		return err
 	}
 	filterDepTree()
-	b, err = json.MarshalIndent(depMismatchTree, "", "  ")
-	if err == nil {
-		outputDepErrJSON := filepath.Join(outputDir, "depMismatch.json")
-		err = ioutil.WriteFile(outputDepErrJSON, b, 0644)
-		if err != nil {
-			return err
-		}
-	}
+	writeJSON(filepath.Join(outputDir, "depMismatch.json"), depMismatchTree)
+	writeJSON(filepath.Join(outputDir, "allDeps.json"), allDepsTree)
 	if versionMiss {
 		fmt.Printf("\nArtifacts generated with error(s) for module name '%s'\n", moduleName)
 	} else {
@@ -174,6 +169,7 @@ func addDepTree(modPath string, dep *depMeta) {
 
 func filterDepTree() {
 	for k, v := range depMismatchTree {
+		allDepsTree[k] = v
 		versionList := v.(map[string][]string)
 		if len(versionList) == 1 {
 			delete(depMismatchTree, k)
@@ -186,4 +182,16 @@ func goVersion() string {
 	v = strings.TrimLeft(v, "go")
 	vArr := strings.Split(v, ".")
 	return fmt.Sprintf("%s.%s", vArr[0], vArr[1])
+}
+
+func writeJSON(filePath string, data any) error {
+	b, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(filePath, b, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }

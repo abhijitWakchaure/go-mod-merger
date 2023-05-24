@@ -65,15 +65,17 @@ Currently the tool supports passing a map of module names to replace via a confi
   "replace": {
     "github.com/project-flogo/core": "github.com/abhijitWakchaure/project-flogo-core",
     "github.com/project-flogo/flow": "github.com/abhijitWakchaure/project-flogo-flow"
-  }
+  },
+  "ignoreMajorVersionMismatch": ["github.com/project-flogo/core", "github.com/project-flogo/flow"],
+  "forceMaster": ["github.com/project-flogo/core", "github.com/project-flogo/flow"]
 }
 ```
 
-This config will add the `replace` statements using above json object.
+This config will ignore the major version mismatch for all the packages in the array `ignoreMajorVersionMismatch` and will just pick the latest major version. It will directly use version as a `master` for packages in the array `forceMaster`. Also it will add the `replace packageA version => packageB version` statements for provided packages in the `replace` map.
 
 ## Artifacts
 
-The tool will create 3 artifacts: `go.mod`, `imports.go` and `depMismatch.json`
+The tool will create these artifacts: `go.mod`, `imports.go`, `depMismatch.json` and `allDeps.json`
 
 - go.mod: This mod file will have the given module name (if not specified default `dummy` will be used), current go version, direct and indirect dependencies.
 
@@ -93,6 +95,22 @@ The tool will create 3 artifacts: `go.mod`, `imports.go` and `depMismatch.json`
       "~/go/src/github.com/project-flogo/flow/go.mod"
     ],
     "v1.8.2": ["~/go/src/github.com/project-flogo/legacybridge/go.mod"]
+  }
+}
+```
+
+- allDeps.json: This will contain a tree of all the dependencies along with their versions and go.mod file path. e.g. The sample allDeps.json will look like:
+
+```json
+{
+  "github.com/project-flogo/core": {
+    "master": [
+      "~/go/src/github.com/project-flogo/flow/go.mod",
+      "~/go/src/github.com/project-flogo/legacybridge/go.mod"
+    ],
+    "v0.9.2": [
+      "~/go/src/github.com/project-flogo/grpc/go.mod"
+    ]
   }
 }
 ```

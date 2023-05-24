@@ -17,6 +17,12 @@ import (
 // v0.9.1-0.20190603184501-d845e1d612f8
 // v0.9.0-rc.1.0.20190509204259-4246269fb68e
 func Compare(packageName, v1Str, v2Str string) (string, error) {
+	// check if master is forced for the package
+	if isMasterForced(packageName) {
+		fmt.Printf("\t🚩 overriding version with master\n")
+		return "master", nil
+	}
+
 	if !strings.HasPrefix(v1Str, "v") || !strings.HasPrefix(v2Str, "v") {
 		return "", fmt.Errorf("version does not follow semvar guidelines")
 	}
@@ -124,6 +130,15 @@ func convertTimestamp(timestamp string) (time.Time, error) {
 
 func isMajorMismatchIgnored(packageName string) bool {
 	for _, v := range config.Read().IgnoreMajorVersionMismatch {
+		if packageName == v {
+			return true
+		}
+	}
+	return false
+}
+
+func isMasterForced(packageName string) bool {
+	for _, v := range config.Read().ForceMaster {
 		if packageName == v {
 			return true
 		}

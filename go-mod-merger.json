@@ -3,5 +3,6 @@
     "github.com/project-flogo/core": "github.com/abhijitWakchaure/project-flogo-core",
     "github.com/project-flogo/flow": "github.com/abhijitWakchaure/project-flogo-flow"
   },
-  "ignoreMajorVersionMismatch": ["github.com/project-flogo/core", "github.com/project-flogo/flow"]
+  "ignoreMajorVersionMismatch": ["github.com/project-flogo/core", "github.com/project-flogo/flow"],
+  "forceMaster": ["github.com/project-flogo/core", "github.com/project-flogo/flow"]
 }
