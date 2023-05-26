@@ -24,11 +24,16 @@ type depMeta struct {
 var depMismatchTree, allDepsTree map[string]interface{}
 
 var modReplace = map[string]string{}
+var gopathPrefix string
 
 // Parse ...
 func Parse(moduleName, outputDir string, files []string) error {
 	if len(files) == 0 {
 		return fmt.Errorf("no go.mod file(s) provided")
+	}
+	gopath := os.Getenv("GOPATH")
+	if gopath != "" {
+		gopathPrefix = filepath.Join(gopath, "src")
 	}
 	c := config.Read()
 	if c != nil && len(c.Replace) > 0 {
@@ -54,7 +59,7 @@ func Parse(moduleName, outputDir string, files []string) error {
 		if filepath.Base(v) != "go.mod" {
 			return fmt.Errorf("invalid go.mod file path: %s", v)
 		}
-		fmt.Printf("\nParsing go.mod at: %s", v)
+		fmt.Printf("\nParsing go.mod at: %s", trimGopath(v))
 		if _, err := os.Stat(v); err != nil {
 			return err
 		}
@@ -77,23 +82,30 @@ func Parse(moduleName, outputDir string, files []string) error {
 				version:  req.Mod.Version,
 				indirect: req.Indirect,
 			}
-			// check if master is forced for the package
-			if isMasterForced(dep.path) {
-				fmt.Printf("\n\t🚩 Overriding version with 'master' for module [%s]", dep.path)
-				dep.version = "master"
+			// check if package need to be removed
+			if shouldRemove(dep.path) {
+				fmt.Printf("\n\t🚩 Removing module [%s]", dep.path)
+				continue
 			}
-			if d, ok := deps[req.Mod.Path]; ok && d.version != dep.version {
-				fmt.Printf("\n\tMismatched version for [%s]\n", req.Mod.Path)
-				fmt.Printf("\t\twant  : %s \tmod file: %s\n", dep.version, dep.source)
-				fmt.Printf("\t\twant  : %s \tmod file: %s\n", d.version, d.source)
-				latest, err := semvar.Compare(req.Mod.Path, d.version, dep.version)
-				if err != nil {
-					fmt.Printf("❌ Error! %s\n", err.Error())
-					versionMiss = true
-				} else {
-					fmt.Printf("\t\tpicked: %s 🔼\n", latest)
-					dep.version = latest
-					deps[req.Mod.Path].version = latest
+			// check if version is forced for the package
+			forcedVer, ok := forcedVersion(dep.path)
+			if ok {
+				fmt.Printf("\n\t🚩 Overriding version with '%s' for module [%s]", forcedVer, dep.path)
+				dep.version = forcedVer
+			} else {
+				if d, ok := deps[req.Mod.Path]; ok && d.version != dep.version {
+					fmt.Printf("\n\tMismatched version for [%s]\n", req.Mod.Path)
+					fmt.Printf("\t\twant  : %s \tmod file: %s\n", dep.version, trimGopath(dep.source))
+					fmt.Printf("\t\twant  : %s \tmod file: %s\n", d.version, trimGopath(d.source))
+					latest, err := semvar.Compare(req.Mod.Path, d.version, dep.version)
+					if err != nil {
+						fmt.Printf("❌ Error! %s\n", err.Error())
+						versionMiss = true
+					} else {
+						fmt.Printf("\t\tpicked: %s 🔼\n", latest)
+						dep.version = latest
+						deps[req.Mod.Path].version = latest
+					}
 				}
 			}
 			deps[req.Mod.Path] = dep
@@ -201,11 +213,40 @@ func writeJSON(filePath string, data any) error {
 	return nil
 }
 
-func isMasterForced(packageName string) bool {
-	for _, v := range config.Read().ForceMaster {
-		if packageName == v {
+func forcedVersion(packageName string) (string, bool) {
+	c := config.Read()
+	if c == nil || len(c.ForceVersion) == 0 {
+		return "", false
+	}
+	v, ok := c.ForceVersion[packageName]
+	if !ok {
+		return "", false
+	}
+	return v, true
+}
+
+func shouldRemove(packageName string) bool {
+	c := config.Read()
+	if c == nil || len(c.Remove) == 0 {
+		return false
+	}
+	for _, v := range c.Remove {
+		if v == packageName {
 			return true
 		}
 	}
 	return false
+}
+
+func trimGopath(s string) string {
+	if gopathPrefix == "" {
+		return s
+	}
+	if !strings.HasPrefix(s, gopathPrefix) {
+		return s
+	}
+	s = strings.TrimPrefix(s, gopathPrefix)
+	s = strings.TrimPrefix(s, "/")
+	s = strings.TrimPrefix(s, "\\")
+	return filepath.Join("$GOPATH", "src", s)
 }
