@@ -43,6 +43,12 @@ func Parse(moduleName, outputDir string, files []string) error {
 			fmt.Printf("\t%s\n", v)
 		}
 	}
+	if c != nil && len(c.ForceVersion) > 0 {
+		fmt.Printf("Using forceVersion map:\n")
+		for k, v := range c.ForceVersion {
+			fmt.Printf("\t%s: %s\n", k, v)
+		}
+	}
 	deps := make(map[string]*depMeta, 0)
 	// Create a new modfile.File object
 	mod := new(modfile.File)
@@ -218,11 +224,15 @@ func forcedVersion(packageName string) (string, bool) {
 	if c == nil || len(c.ForceVersion) == 0 {
 		return "", false
 	}
-	v, ok := c.ForceVersion[packageName]
-	if !ok {
-		return "", false
+	v1, ok := c.ForceVersion[packageName]
+	if ok {
+		return v1, true
 	}
-	return v, true
+	v2, okLower := c.ForceVersion[strings.ToLower(packageName)]
+	if okLower {
+		return v2, true
+	}
+	return "", false
 }
 
 func shouldRemove(packageName string) bool {
@@ -231,7 +241,7 @@ func shouldRemove(packageName string) bool {
 		return false
 	}
 	for _, v := range c.Remove {
-		if v == packageName {
+		if strings.EqualFold(v, packageName) {
 			return true
 		}
 	}

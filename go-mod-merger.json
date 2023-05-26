@@ -2,7 +2,11 @@
   "forceVersion": {
     "github.com/project-flogo/core": "master",
     "github.com/project-flogo/flow": "master",
-    "github.com/project-flogo/contrib": "v0.15.1"
+    "github.com/project-flogo/contrib": "master",
+    "github.com/project-flogo/services": "master",
+    "github.com/project-flogo/cli": "master",
+    "github.com/TIBCOSoftware/flogo-contrib": "master",
+    "github.com/TIBCOSoftware/flogo-lib": "master"
   },
   "ignoreMajorVersionMismatch": [
     "github.com/project-flogo/core",
